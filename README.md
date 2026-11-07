@@ -8,6 +8,8 @@ question, re-plans when it does not, and composes one grounded reply.
 All four agents from the brief are implemented. The Planner is the agent built
 in depth.
 
+**Live demo:** https://personal-finance-advisor-agent.vercel.app
+
 ```
 You: How can I improve my monthly savings?
 
