@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personal Finance Advisor</title>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#121a2e; --panel-2:#172137; --line:#24314f;
+    --ink:#e8edf7; --ink-dim:#9aa8c4; --ink-faint:#6b7a9b;
+    --accent:#4f8cff; --accent-2:#7aa7ff;
+    --ok:#2fbf7e; --warn:#f2b230; --high:#f2744f; --crit:#e5484d; --info:#5b7cb5;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif}
+  a{color:var(--accent-2)}
+  header{display:flex;align-items:center;gap:16px;padding:14px 22px;
+    border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:650;letter-spacing:.2px}
+  .logo{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+    background:linear-gradient(145deg,var(--accent),#2b5fd9);font-size:15px}
+  .tag{font-size:11px;color:var(--ink-faint);border:1px solid var(--line);
+    padding:3px 9px;border-radius:999px;white-space:nowrap}
+  header .right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  select,button{font:inherit;color:var(--ink);background:var(--panel-2);
+    border:1px solid var(--line);border-radius:9px;padding:7px 11px;cursor:pointer}
+  button:hover,select:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  button.primary:hover{background:var(--accent-2)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+
+  .layout{display:grid;gap:16px;padding:16px 22px 28px;align-items:start;
+    grid-template-columns:300px minmax(0,1fr) 400px;
+    grid-template-areas:"side chat agent"}
+  .side{grid-area:side}#chat{grid-area:chat}#agentpanel{grid-area:agent}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .panel h2{margin:0;padding:12px 15px;font-size:12px;letter-spacing:.9px;
+    text-transform:uppercase;color:var(--ink-dim);border-bottom:1px solid var(--line);
+    background:var(--panel-2);display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .panel .body{padding:14px 15px}
+  .stack{display:flex;flex-direction:column;gap:16px}
+
+  .kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:13.5px}
+  .kv span:first-child{color:var(--ink-dim)}
+  .kv b{font-variant-numeric:tabular-nums}
+  .big{font-size:26px;font-weight:680;font-variant-numeric:tabular-nums;letter-spacing:-.4px}
+  .sub{color:var(--ink-faint);font-size:12.5px}
+
+  .bar{height:7px;border-radius:5px;background:#1d2947;overflow:hidden;margin-top:5px}
+  .bar>i{display:block;height:100%;border-radius:5px;background:var(--accent)}
+  .cat{margin-bottom:11px}
+  .cat .top{display:flex;justify-content:space-between;font-size:13px;gap:8px}
+  .cat .top b{font-variant-numeric:tabular-nums}
+
+  .state{font-size:10.5px;padding:2px 7px;border-radius:999px;border:1px solid;white-space:nowrap}
+  .s-healthy{color:var(--ok);border-color:#1e5c42;background:#10301f}
+  .s-near_limit{color:var(--warn);border-color:#6a5118;background:#2e2410}
+  .s-on_track_to_breach{color:var(--high);border-color:#6d3826;background:#311a12}
+  .s-breached{color:var(--crit);border-color:#6f2326;background:#301215}
+
+  #chat{display:flex;flex-direction:column;height:calc(100vh - 128px);min-height:560px}
+  #log{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:13px}
+  .msg{max-width:88%;padding:11px 14px;border-radius:13px;white-space:pre-wrap;
+    word-wrap:break-word;font-size:14.2px}
+  .msg.user{align-self:flex-end;background:var(--accent);border-bottom-right-radius:4px}
+  .msg.bot{align-self:flex-start;background:var(--panel-2);border:1px solid var(--line);
+    border-bottom-left-radius:4px}
+  .msg.bot strong{color:#fff}
+  .meta{align-self:flex-start;font-size:11px;color:var(--ink-faint);
+    display:flex;gap:7px;flex-wrap:wrap}
+  .pill{border:1px solid var(--line);border-radius:999px;padding:2px 8px;background:#101729}
+  .composer{display:flex;gap:9px;padding:12px;border-top:1px solid var(--line);background:var(--panel-2)}
+  .composer input{flex:1;font:inherit;color:var(--ink);background:var(--bg);
+    border:1px solid var(--line);border-radius:10px;padding:10px 13px}
+  .composer input:focus{outline:none;border-color:var(--accent)}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;padding:0 12px 12px;background:var(--panel-2)}
+  .chip{font-size:11.5px;padding:5px 10px;border-radius:999px;background:var(--bg);
+    border:1px solid var(--line);cursor:pointer;color:var(--ink-dim)}
+  .chip:hover{border-color:var(--accent);color:var(--ink)}
+
+  .ev{border-left:2px solid var(--line);padding:0 0 13px 13px;position:relative}
+  .ev:last-child{padding-bottom:2px}
+  .ev::before{content:"";position:absolute;left:-5px;top:4px;width:8px;height:8px;
+    border-radius:50%;background:var(--accent);border:2px solid var(--panel)}
+  .ev .st{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--accent-2);
+    font-weight:700;display:flex;gap:7px;align-items:baseline}
+  .ev .st em{font-style:normal;color:var(--ink-faint);font-weight:400;letter-spacing:0}
+  .ev .lb{font-size:13px;margin-top:2px}
+  .ev .dt{font-size:11.5px;color:var(--ink-faint);white-space:pre-wrap;margin-top:3px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.5}
+  .ev[data-stage="replan"]::before{background:var(--warn)}
+  .ev[data-stage="replan"] .st{color:var(--warn)}
+  .ev[data-stage="execute"]::before{background:var(--ok)}
+  .ev[data-stage="execute"] .st{color:var(--ok)}
+  .ev[data-stage="reflect"]::before{background:var(--info)}
+
+  .item{border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:9px;
+    background:var(--panel-2)}
+  .item .t{font-size:13.5px;font-weight:620;display:flex;justify-content:space-between;gap:9px}
+  .item .d{font-size:12.3px;color:var(--ink-dim);margin-top:4px}
+  .item .w{font-size:11.5px;color:var(--ink-faint);margin-top:5px;font-style:italic}
+  .amt{color:var(--ok);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .lv{width:4px;border-radius:3px;background:var(--line)}
+
+  .tabs{display:flex;flex-wrap:wrap;gap:4px;padding:8px 10px;
+    border-bottom:1px solid var(--line);background:var(--panel-2)}
+  .tab{font-size:12px;padding:5px 10px;border-radius:8px;cursor:pointer;color:var(--ink-dim);
+    border:1px solid transparent;white-space:nowrap}
+  .tab.on{background:var(--bg);border-color:var(--line);color:var(--ink)}
+  .tabpane{display:none;padding:14px 15px;max-height:calc(100vh - 230px);overflow-y:auto}
+  .tabpane.on{display:block}
+  .empty{color:var(--ink-faint);font-size:12.5px;text-align:center;padding:22px 8px}
+  .spark{display:flex;align-items:flex-end;gap:5px;height:56px;margin-top:9px}
+  .spark>i{flex:1;background:linear-gradient(180deg,var(--accent),#24467f);border-radius:3px 3px 0 0}
+  .spark-x{display:flex;gap:5px;margin-top:4px}
+  .spark-x>i{flex:1;font-size:9.5px;color:var(--ink-faint);text-align:center;font-style:normal}
+  .note{font-size:11.5px;color:var(--ink-faint);padding:9px 12px;border-top:1px solid var(--line)}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;background:var(--ok)}
+  .typing{display:inline-flex;gap:4px}
+  .typing i{width:5px;height:5px;border-radius:50%;background:var(--ink-faint);
+    animation:b 1.1s infinite}
+  .typing i:nth-child(2){animation-delay:.18s}.typing i:nth-child(3){animation-delay:.36s}
+  @keyframes b{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+  @media (max-width:1499px){
+    .layout{grid-template-columns:minmax(0,1fr) 380px;
+      grid-template-areas:"side side" "chat agent"}
+    .side{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start}
+    #chat{height:620px;min-height:0}
+    .tabpane{max-height:540px}
+  }
+  @media (max-width:980px){
+    .layout{grid-template-columns:1fr;grid-template-areas:"side" "chat" "agent"}
+    .side{grid-template-columns:1fr}
+    #chat{height:auto;min-height:480px}
+    .tabpane{max-height:none}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="logo">₹</div>
+    <div>Personal Finance Advisor<div class="sub" style="font-weight:400">Agentic AI prototype &middot; retail banking</div></div>
+  </div>
+  <div class="right">
+    <span class="tag" id="asof">loading…</span>
+    <span class="tag" id="llm">—</span>
+    <select id="customer"></select>
+    <button id="reset" title="Clear the conversation and stored preferences">Reset demo</button>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- left: account -->
+  <div class="stack side">
+    <div class="panel">
+      <h2>Account</h2>
+      <div class="body" id="acct"><div class="empty">loading…</div></div>
+    </div>
+    <div class="panel">
+      <h2><span>Spend by category</span><span class="sub" id="refmonth"></span></h2>
+      <div class="body" id="cats"><div class="empty">loading…</div></div>
+    </div>
+    <div class="panel">
+      <h2>Budgets this month</h2>
+      <div class="body" id="budgets"><div class="empty">loading…</div></div>
+    </div>
+  </div>
+
+  <!-- middle: chat -->
+  <div class="panel" id="chat">
+    <h2><span>Conversation</span><span class="sub" id="turncount"></span></h2>
+    <div id="log"></div>
+    <div class="chips" id="chips"></div>
+    <div class="composer">
+      <input id="input" placeholder="Ask about your spending, budgets, goals…" autocomplete="off">
+      <button class="primary" id="send">Send</button>
+    </div>
+  </div>
+
+  <!-- right: agent internals -->
+  <div class="panel" id="agentpanel">
+    <h2><span>Agent activity</span><span class="sub" id="timing"></span></h2>
+    <div class="tabs">
+      <div class="tab on" data-t="trace">Reasoning</div>
+      <div class="tab" data-t="plan">Plan</div>
+      <div class="tab" data-t="alerts">Alerts</div>
+      <div class="tab" data-t="recs">Advice</div>
+      <div class="tab" data-t="tools">Tools</div>
+      <div class="tab" data-t="mem">Memory</div>
+    </div>
+    <div class="tabpane on" id="p-trace"><div class="empty">Ask a question to see the planner reason.</div></div>
+    <div class="tabpane" id="p-plan"><div class="empty">No plan yet.</div></div>
+    <div class="tabpane" id="p-alerts"><div class="empty">No alerts yet.</div></div>
+    <div class="tabpane" id="p-recs"><div class="empty">No recommendations yet.</div></div>
+    <div class="tabpane" id="p-tools"><div class="empty">No tool calls yet.</div></div>
+    <div class="tabpane" id="p-mem"><div class="empty">No memory yet.</div></div>
+    <div class="note" id="footnote">Every figure shown is computed by a tool, never generated by the language model.</div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const SESSION = "web-" + Math.random().toString(36).slice(2, 8);
+let customerId = "CUST001", turns = 0, busy = false;
+
+const inr = n => "₹" + Math.round(Math.abs(+n || 0)).toLocaleString("en-IN") ;
+const signed = n => (n < 0 ? "-" : "") + inr(n);
+const esc = s => String(s ?? "").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const md = s => esc(s)
+  .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+  .replace(/^- /gm, "• ")
+  .replace(/`(.+?)`/g, "<code>$1</code>");
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error(path + " -> " + r.status);
+  return r.json();
+}
+
+async function boot() {
+  const [health, cust, sug] = await Promise.all([
+    api("/api/health"), api("/api/customers"), api("/api/suggestions")
+  ]);
+  $("#asof").textContent = "data as of " + health.as_of;
+  $("#llm").innerHTML = health.llm_enabled
+    ? '<span class="dot"></span> LLM ' + esc(health.model)
+    : "deterministic mode";
+  $("#customer").innerHTML = cust.customers
+    .map(c => `<option value="${c.customer_id}">${esc(c.name)} · ${esc(c.city)}</option>`).join("");
+  $("#chips").innerHTML = sug.suggestions
+    .map(s => `<div class="chip">${esc(s)}</div>`).join("");
+  $("#chips").querySelectorAll(".chip").forEach(c =>
+    c.onclick = () => { $("#input").value = c.textContent; send(); });
+  await loadDashboard();
+  greet();
+}
+
+function greet() {
+  const name = $("#customer").selectedOptions[0].textContent.split(" ·")[0];
+  $("#log").innerHTML = "";
+  bubble("bot", `Hello ${name}. I can look at your spending, budgets, subscriptions and goals, and suggest where to save. Ask me anything, or tap a suggestion below.`);
+}
+
+async function loadDashboard() {
+  const d = await api("/api/dashboard/" + customerId);
+  $("#refmonth").textContent = d.reference_month;
+
+  const cap = d.capacity, cmp = d.comparison;
+  const chg = cmp.total_change_pct;
+  $("#acct").innerHTML = `
+    <div class="big">${inr(d.total_spend)}</div>
+    <div class="sub">spent in ${d.reference_month}${chg === null ? "" :
+      ` · <span style="color:${chg > 0 ? "var(--high)" : "var(--ok)"}">${chg > 0 ? "+" : ""}${chg}%</span> vs ${cmp.previous_month}`}</div>
+    ${spark(d.monthly_totals)}
+    <div style="margin-top:12px">
+      <div class="kv"><span>Monthly income</span><b>${inr(d.profile.monthly_income)}</b></div>
+      <div class="kv"><span>Balance</span><b>${inr(d.profile.balance)}</b></div>
+      <div class="kv"><span>Essentials</span><b>${inr(cap.essential_spend)}</b></div>
+      <div class="kv"><span>Discretionary</span><b>${inr(cap.discretionary_spend)}</b></div>
+      <div class="kv"><span>Invested</span><b>${inr(cap.invested)}</b></div>
+      <div class="kv"><span>Surplus</span><b style="color:${cap.surplus < 0 ? "var(--crit)" : "var(--ok)"}">${signed(cap.surplus)}</b></div>
+      <div class="kv"><span>Savings rate</span><b>${cap.savings_rate_pct}%</b></div>
+    </div>`;
+
+  const top = Object.entries(d.categories).slice(0, 7);
+  const max = Math.max(...top.map(([, v]) => v.total), 1);
+  $("#cats").innerHTML = top.map(([name, v]) => `
+    <div class="cat">
+      <div class="top"><span>${esc(name)}</span><b>${inr(v.total)}</b></div>
+      <div class="bar"><i style="width:${(100 * v.total / max).toFixed(1)}%"></i></div>
+      <div class="sub">${v.share_pct}% · ${v.txn_count} txns · top ${esc(v.top_merchant.merchant)}</div>
+    </div>`).join("");
+
+  $("#budgets").innerHTML = d.budgets.map(b => `
+    <div class="cat">
+      <div class="top"><span>${esc(b.category)}</span>
+        <span class="state s-${b.state}">${b.state.replace(/_/g, " ")}</span></div>
+      <div class="bar"><i style="width:${Math.min(b.used_pct, 100).toFixed(1)}%;background:${
+        b.state === "breached" ? "var(--crit)" : b.state === "on_track_to_breach"
+        ? "var(--high)" : b.state === "near_limit" ? "var(--warn)" : "var(--ok)"}"></i></div>
+      <div class="sub">${inr(b.spent)} of ${inr(b.budget)} · ${b.used_pct}% used${
+        b.projection_confidence === "actual" ? "" :
+        ` · projected ${inr(b.projected_spend)} (${b.projected_pct}%)`}</div>
+    </div>`).join("");
+}
+
+function spark(totals) {
+  const e = Object.entries(totals);
+  if (!e.length) return "";
+  const max = Math.max(...e.map(([, v]) => v), 1);
+  return `<div class="spark">${e.map(([, v]) =>
+      `<i style="height:${Math.max(6, 100 * v / max)}%"></i>`).join("")}</div>
+    <div class="spark-x">${e.map(([m]) => `<i>${m.slice(5)}</i>`).join("")}</div>`;
+}
+
+function bubble(role, text) {
+  const d = document.createElement("div");
+  d.className = "msg " + role;
+  d.innerHTML = role === "bot" ? md(text) : esc(text);
+  $("#log").append(d);
+  $("#log").scrollTop = $("#log").scrollHeight;
+  return d;
+}
+
+async function send() {
+  const input = $("#input"), message = input.value.trim();
+  if (!message || busy) return;
+  busy = true; $("#send").disabled = true;
+  input.value = "";
+  bubble("user", message);
+  const thinking = bubble("bot", "");
+  thinking.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
+
+  try {
+    const turn = await api("/api/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({customer_id: customerId, message, session_id: SESSION})
+    });
+    thinking.innerHTML = md(turn.answer);
+    const m = document.createElement("div");
+    m.className = "meta";
+    m.innerHTML = [
+      `intent ${esc(turn.intent.intent)} ${turn.intent.confidence}`,
+      `${turn.plan.steps.length} agent step(s)`,
+      `${turn.tool_calls.length} tool call(s)`,
+      `${turn.duration_ms} ms`,
+      turn.llm.enabled ? "LLM narration" : "deterministic"
+    ].map(t => `<span class="pill">${t}</span>`).join("");
+    $("#log").append(m);
+    $("#log").scrollTop = $("#log").scrollHeight;
+    render(turn);
+    turns++;
+    $("#turncount").textContent = turns + " turn" + (turns === 1 ? "" : "s");
+    await loadDashboard();
+  } catch (err) {
+    thinking.innerHTML = '<strong>Something went wrong.</strong> ' + esc(err.message);
+  } finally {
+    busy = false; $("#send").disabled = false; input.focus();
+  }
+}
+
+function render(t) {
+  $("#timing").textContent = t.duration_ms + " ms";
+
+  $("#p-trace").innerHTML = t.trace.map(e => `
+    <div class="ev" data-stage="${esc(e.stage)}">
+      <div class="st">${esc(e.stage)} <em>${e.elapsed_ms} ms</em></div>
+      <div class="lb">${esc(e.label)}</div>
+      ${e.detail ? `<div class="dt">${esc(e.detail)}</div>` : ""}
+    </div>`).join("") || '<div class="empty">no trace</div>';
+
+  const steps = t.plan.steps || [];
+  $("#p-plan").innerHTML = (steps.length ? `
+    <div class="sub" style="margin-bottom:10px">Goal: ${esc(t.plan.goal)}</div>` +
+    steps.map((s, i) => `
+      <div class="item">
+        <div class="t"><span>${i + 1}. ${esc(s.agent)}.${esc(s.task)}</span>
+          <span class="state s-${s.status === "done" ? "healthy" :
+            s.status === "failed" ? "breached" : "near_limit"}">${esc(s.status)}</span></div>
+        <div class="d">${esc(s.rationale)}</div>
+        <div class="w">capability ${esc(s.capability)}${
+          s.depends_on.length ? " · after " + s.depends_on.join(", ") : ""
+        }${s.origin === "replan" ? " · added by re-plan" : ""}${
+          Object.keys(s.params).length ? " · " + esc(JSON.stringify(s.params)) : ""}</div>
+      </div>`).join("")
+    : '<div class="empty">No plan was needed for this turn.</div>');
+
+  const sev = s => ({critical:"var(--crit)",high:"var(--high)",medium:"var(--warn)",
+                     low:"var(--info)",info:"var(--ink-faint)"}[s] || "var(--line)");
+  $("#p-alerts").innerHTML = t.alerts.length ? t.alerts.map(a => `
+    <div class="item" style="border-left:3px solid ${sev(a.severity)}">
+      <div class="t"><span>${esc(a.title)}</span>
+        <span class="sub" style="color:${sev(a.severity)}">${esc(a.severity)}</span></div>
+      <div class="d">${esc(a.message)}</div>
+      <div class="w">triggered by ${esc(a.triggered_by)}</div>
+    </div>`).join("") : '<div class="empty">No alerts raised in this turn.</div>';
+
+  $("#p-recs").innerHTML = t.recommendations.length ? t.recommendations.map(r => `
+    <div class="item">
+      <div class="t"><span>${esc(r.title)}</span>
+        <span class="amt">${r.monthly_impact ? "+" + inr(r.monthly_impact) + "/mo" : "enabler"}</span></div>
+      <div class="d">${esc(r.action)}</div>
+      <div class="w">${esc(r.rationale)}</div>
+      <div class="w">${esc(r.effort)} effort · confidence ${r.confidence}</div>
+    </div>`).join("") : '<div class="empty">No recommendations in this turn.</div>';
+
+  $("#p-tools").innerHTML = t.tool_calls.length ? t.tool_calls.map(c => `
+    <div class="item">
+      <div class="t"><span>${esc(c.tool)}</span>
+        <span class="sub">${c.ok ? c.latency_ms + " ms" : "failed"}</span></div>
+      <div class="w">called by ${esc(c.called_by)}${
+        Object.keys(c.args || {}).length ? " · " + esc(JSON.stringify(c.args)) : ""}</div>
+      ${c.error ? `<div class="d" style="color:var(--crit)">${esc(c.error)}</div>` : ""}
+    </div>`).join("") : '<div class="empty">No tool calls.</div>';
+
+  const mem = t.memory || {}, prof = mem.profile || {}, cons = prof.constraints || {};
+  $("#p-mem").innerHTML = `
+    <div class="item">
+      <div class="t"><span>Long-term memory</span><span class="sub">${prof.note_count || 0} note(s)</span></div>
+      <div class="w">backend ${esc(prof.backend || "n/a")}</div>
+      <div class="d">Protected: ${(cons.protected_categories || []).map(esc).join(", ") || "none"}<br>
+        Declined: ${(cons.declined || []).map(c => esc(String(c))).join(", ") || "none"}</div>
+    </div>
+    ${(prof.notes || []).map(n => `
+      <div class="item">
+        <div class="t"><span>${esc(n.kind)}</span><span class="sub">${esc(n.at || "")}</span></div>
+        <div class="d">${esc(n.key)} = ${esc(String(n.value))}</div>
+        ${n.note ? `<div class="w">${esc(n.note)}</div>` : ""}
+      </div>`).join("")}
+    <div class="item">
+      <div class="t"><span>Conversation memory</span>
+        <span class="sub">${(mem.conversation || []).length} turn(s)</span></div>
+      <div class="w">working-memory keys: ${(mem.working || []).map(esc).join(", ") || "none"}</div>
+    </div>`;
+}
+
+document.querySelectorAll(".tab").forEach(tab => tab.onclick = () => {
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t === tab));
+  document.querySelectorAll(".tabpane").forEach(p =>
+    p.classList.toggle("on", p.id === "p-" + tab.dataset.t));
+});
+$("#send").onclick = send;
+$("#input").onkeydown = e => { if (e.key === "Enter") send(); };
+$("#customer").onchange = async e => {
+  customerId = e.target.value; turns = 0; $("#turncount").textContent = "";
+  await loadDashboard(); greet();
+};
+$("#reset").onclick = async () => {
+  await api("/api/memory/clear", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({customer_id: customerId, message: "reset", session_id: SESSION})
+  });
+  turns = 0; $("#turncount").textContent = "";
+  ["trace","plan","alerts","recs","tools","mem"].forEach(k =>
+    $("#p-" + k).innerHTML = '<div class="empty">cleared</div>');
+  await loadDashboard(); greet();
+};
+boot().catch(e => { $("#log").innerHTML = '<div class="empty">Failed to start: ' + esc(e.message) + '</div>'; });
+</script>
+</body>
+</html>
